@@ -1,39 +1,32 @@
 === External Database Authentication Reloaded ===
 Contributors: parkerj
 Donate link: none
-Tags: authentication, login, database, ProjectPress, MSSQL, MySQL, PostgreSQL
+Tags: authentication, login, database, MySQL, MSSQL, PostgreSQL, SyBase, SQLite
 Requires at least: 3.1
 Tested up to: 4.2.2
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 
-A plugin that allows the use of an external database (MySQL, PostgreSQL, or MSSQL) for authentication into WordPress. Supports various password hashing methods (include PHPass) and user role checks from the external database.
+A plugin that allows the use of an external database (MySQL, PostgreSQL, MSSQL, and more) for authentication into WordPress.
 
 == Description ==
 
-I was looking for something that would allow users to use <a href="http://projectpress.org/">ProjectPress</a> as their login source for their WordPress site. The External DB Authentication plugin was the answer, but it needed to accomodate PHPass. Therefore, new life has been breathed into an old plugin. 
-This plugin allows the use of an external MySQL, PostgreSQL, or MSSQL database for authentication into WordPress.  It is required that you know the encryption method for the passwords stored in the external database and allows you to use MD5, SHA1, plaintext, PHPass, or enter the hash/salt method yourself.  It disables password reset/retrieval and account creation within the WordPress system on the user-end, and it doesn't allow updating from the WordPress end back into the external authentication source. 
+*Please Note: When you update to version 1.2.1, you will need to re-enter the details on the settings page.*
 
-In addition to authentication the plugin allows you to:
+This External DB Authentication plugin allows the use of an external MySQL, PostgreSQL, MSSQL, Sybase, Oracle, or SQLite database for authentication into WordPress.  It is required that you know the encryption method for the passwords stored in the external database. Password encryption methods include MD5, SHA1, plaintext, PHPass, or enter a custom hash/salt method.  It disables password reset/retrieval and account creation within the WordPress system on the user-end, and it doesn't allow updating from the WordPress end back into the external authentication source. 
+
+In addition to authentication, the plugin allows you to:
+
 * Choose additional fields, such as first name/last name and website, to be imported into WordPress.
 * Enter a custom message for users concerning logins. 
-* Do user role checks from the external database: you can set the plugin to check from a specific role field and compare to a value to allow login to WordPress.  
-
-PostgreSQL or MSSQL database authentication requires MDB2 PEAR database abstraction package and relevant database drivers. MySQL continues to use the built-in PHP functions.
+* Do user role checks from the external database: you can set the plugin to check from a specific role field and compare to a value to allow login to WordPress.
 
 == Installation ==
 
 * Prepare your WP admin account on your external database: create an admin account in your external system.
-* If using PostgreSQL or MSSQL, install the MDB2 PEAR database abstraction package and relevant database drivers and confirm its include path.
-* Change "New User Default Role" in Settings->General, if desired, to whatever level of control you wish externally authenticated users to have.
-* Upload `pp_db_auth.php` to the `/wp-content/plugins/` directory
+* Change "New User Default Role" in Settings->General, if desired, to whatever level of control you wish external authenticated users to have.
+* Upload `external-db-auth-reloaded` folder to the `/wp-content/plugins/` directory
 * Activate the plugin through the 'Plugins' menu in WordPress
 * Enter your external database settings in Settings->External DB settings
-
-= ProjecPress Users =
-
-In order to use ProjectPress as an external source to handle WordPress login's, please choose HASH as the 
-encryption type.
-
 
 == Frequently Asked Questions ==
 
@@ -64,6 +57,13 @@ Delete or rename the plugin; if it's a DB connection-related error most likely y
 3. Example "Lost my password" retrieval attempt
 
 == Changelog ==
+
+= 1.2.1 (2015-05-28) =
+* Added error logging; logs will be located in wp-content directory
+* You will need to re-enter your settings after you upgrade to this version
+* Now uses PDO for database connection
+* Now supports MySQL, MSSQL, PostgreSQL, Sybase, Oracle and SQLite databases out of the box
+* Plugin can now be translated into other languages
 
 = 1.2.0 (2015-05-14) =
 * Fixed mysqli database connection
