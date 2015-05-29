@@ -3,7 +3,7 @@
   Plugin Name: External Database Authentication Reloaded
   Plugin URI: http://www.7mediaws.org/extend/plugins/external-db-auth-reloaded/
   Description: Used to externally authenticate WP users with an existing user DB.
-  Version: 1.2.1
+  Version: 1.2.2
   Author: Joshua Parker
   Author URI: http://www.desiringfreedom.com/
   Original Author: Charlene Barina
@@ -287,7 +287,7 @@ function external_check_password($password, $hash, $user_id = '')
 //authenticates with its own database.
 function external_db_auth_check_login($username, $password)
 {
-    $database = new medoo([
+    $database = new medoo(array(
         // required
         'database_type' => get_option('external_db_type'),
         'database_name' => get_option('external_db'),
@@ -298,10 +298,10 @@ function external_db_auth_check_login($username, $password)
         // optional
         'port' => get_option('external_db_port'),
         // driver_option for connection, read more from http://www.php.net/manual/en/pdo.setattribute.php
-        'option' => [
+        'option' => array(
             PDO::ATTR_CASE => PDO::CASE_NATURAL
-        ]
-    ]);
+        )
+    ));
 
     require_once('./wp-includes/registration.php');
     require_once('./wp-includes/user.php');

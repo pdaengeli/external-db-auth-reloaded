@@ -1,10 +1,10 @@
 === External Database Authentication Reloaded ===
 Contributors: parkerj
 Donate link: none
-Tags: authentication, login, database, MySQL, MSSQL, PostgreSQL, SyBase, SQLite
+Tags: authentication, login, database, MySQL, MSSQL, Oracle, PostgreSQL, SyBase, SQLite
 Requires at least: 3.1
 Tested up to: 4.2.2
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 
 A plugin that allows the use of an external database (MySQL, PostgreSQL, MSSQL, and more) for authentication into WordPress.
 
@@ -29,6 +29,15 @@ In addition to authentication, the plugin allows you to:
 * Enter your external database settings in Settings->External DB settings
 
 == Frequently Asked Questions ==
+
+= How do I use the "Other" encryption method? =
+
+Sometimes you will need to use "Other" as an encryption method when all other methods do not meet your specific need. When you find yourself in this situation, you will need to add 
+your own custom code into the "Hash Code" input field. You have access to the following variables: `$password2`, `$username`, `$password`. `$username` and `$password` are the info needed from your external database.
+
+Now let's say for example I am using a system that combines the username and password and then hashes it with `md5`. In the "Hash Code" input field, I would need to enter the following custom code:
+
+`$password2 = md5($username.$password);` 
 
 = My admin account for WP doesn't work anymore! =
 
@@ -57,6 +66,10 @@ Delete or rename the plugin; if it's a DB connection-related error most likely y
 3. Example "Lost my password" retrieval attempt
 
 == Changelog ==
+
+= 1.2.2 (2015-05-29) =
+* Updated code to support PHP version lower than 5.4.x
+* Added example of how to use "Other" encryption method under FAQ's
 
 = 1.2.1 (2015-05-28) =
 * Added error logging; logs will be located in wp-content directory
