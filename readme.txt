@@ -4,7 +4,7 @@ Donate link: none
 Tags: authentication, login, database, MySQL, MSSQL, Oracle, PostgreSQL, SyBase, SQLite
 Requires at least: 3.1
 Tested up to: 4.2.2
-Stable tag: 1.2.2
+Stable tag: 1.2.3
 
 A plugin that allows the use of an external database (MySQL, PostgreSQL, MSSQL, and more) for authentication into WordPress.
 
@@ -66,6 +66,12 @@ Delete or rename the plugin; if it's a DB connection-related error most likely y
 3. Example "Lost my password" retrieval attempt
 
 == Changelog ==
+
+= 1.2.3 (2015-05-30) =
+* Fixed existing external user check
+* Fixed error log path
+* Added SHA256 encryption method
+* Added password hash checking based on selected encryption method
 
 = 1.2.2 (2015-05-29) =
 * Updated code to support PHP version lower than 5.4.x

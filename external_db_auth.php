@@ -3,7 +3,7 @@
   Plugin Name: External Database Authentication Reloaded
   Plugin URI: http://www.7mediaws.org/extend/plugins/external-db-auth-reloaded/
   Description: Used to externally authenticate WP users with an existing user DB.
-  Version: 1.2.2
+  Version: 1.2.3
   Author: Joshua Parker
   Author URI: http://www.desiringfreedom.com/
   Original Author: Charlene Barina
@@ -31,7 +31,7 @@ require('medoo.php');
 error_reporting(E_ALL & ~E_NOTICE);
 ini_set('display_errors', 'Off');
 ini_set('log_errors', 'On');
-ini_set('error_log', WP_CONTENT_DIR . 'external-db-error.' . date('m-d-Y') . '.txt');
+ini_set('error_log', WP_CONTENT_DIR . '/error.' . date('m-d-Y') . '.txt');
 
 function external_db_auth_activate()
 {
@@ -172,6 +172,7 @@ function external_db_auth_display_options()
                     <td><select name="external_db_enc">
                             <option value=""></option>
                             <option value="SHA1"<?php echo selected('SHA1', get_option('external_db_enc'), false); ?>><?php _e('SHA1'); ?></option>
+                            <option value="SHA256"<?php echo selected('SHA256', get_option('external_db_enc'), false); ?>><?php _e('SHA256'); ?></option>
                             <option value="MD5"<?php echo selected('MD5', get_option('external_db_enc'), false); ?>><?php _e('MD5'); ?></option>
                             <option value="HASH"<?php echo selected('HASH', get_option('external_db_enc'), false); ?>><?php _e('HASH'); ?></option>
                             <option value="PHPass"<?php echo selected('PHPass', get_option('external_db_enc'), false); ?>><?php _e('PHPass'); ?></option>
@@ -250,6 +251,31 @@ function external_db_auth_display_options()
     <?php
 }
 
+function check_password_hash($method, $pass, $hash)
+{
+    if ($method === 'SHA1') {
+        if (sha1($pass) === $hash) {
+            return true;
+        }
+    } elseif ($method === 'SHA256') {
+        if (hash('sha256', $pass) === $hash) {
+            return true;
+        }
+    } elseif ($method === 'MD5') {
+        if (md5($pass) === $hash) {
+            return true;
+        }
+    } elseif ($method === 'HASH') {
+        if (external_check_password($pass, $hash)) {
+            return true;
+        }
+    } elseif ($method === 'PHPass') {
+        if (external_check_password($pass, $hash)) {
+            return true;
+        }
+    }
+}
+
 function external_hash_password($password)
 {
     // By default, use the portable hash from phpass
@@ -323,20 +349,17 @@ function external_db_auth_check_login($username, $password)
             $password2 = md5($password);
             break;
         case "HASH" :
-            $password2 = external_check_password($password, $data[0]['password']);
+            $password2 = external_check_password($password, $data[0][$upass]);
             break;
         case "PHPass" :
-            $password2 = external_check_password($password, $data[0]['password']);
+            $password2 = external_check_password($password, $data[0][$upass]);
             break;
         case "Other" :             //right now defaulting to plaintext.  People can change code here for their own special hash
             eval(get_option('external_db_other_enc'));
             break;
     }
 
-    //first check to see if login exists in external db
-    $count = $database->query("SELECT count(*) FROM $mem WHERE $uname = '$username'")->fetchAll();
-
-    if (count($count) > 0) {
+    if (count($data) > 0) {
         //then check to see if pw matches and get other fields...
         $sqlfields['first_name'] = get_option('external_db_first_name');
         $sqlfields['last_name'] = get_option('external_db_last_name');
@@ -355,16 +378,18 @@ function external_db_auth_check_login($username, $password)
         $sqlfields2 = implode(", ", $sqlfields);
 
         //just so queries won't error out if there are no relevant fields for extended data.
-        if (empty($sqlfields2))
+        if ($sqlfields2 === null) {
             $sqlfields2 = get_option('external_db_namefield');
-
-        if (get_option('external_db_enc') === 'HASH' || get_option('external_db_enc') === 'PHPass') {
-            $query = $database->query("SELECT $sqlfields2 FROM " . get_option('external_db_table') . " WHERE " . get_option('external_db_namefield') . " = '$username'")->fetchAll();
-        } else {
-            $query = $database->query("SELECT $sqlfields2 FROM " . get_option('external_db_table') . " WHERE " . get_option('external_db_namefield') . " = '$username' AND " . get_option('external_db_pwfield') . " = '$password2'")->fetchAll();
         }
 
-        if (count($count) > 0) {    //create/update wp account from external database if login/pw exact match exists in that db
+        if (get_option('external_db_enc') == 'Other') {
+            $query = $database->query("SELECT $sqlfields2 FROM " . get_option('external_db_table') . " WHERE " . get_option('external_db_namefield') . " = '$username' AND " . get_option('external_db_pwfield') . " = '$password2'")->fetchAll();
+            $check = $database->query("SELECT $sqlfields2 FROM " . get_option('external_db_table') . " WHERE " . get_option('external_db_namefield') . " = '$username' AND " . get_option('external_db_pwfield') . " = '$password2'")->fetchAll();
+        } else {
+            $query = $database->query("SELECT $sqlfields2 FROM " . get_option('external_db_table') . " WHERE " . get_option('external_db_namefield') . " = '$username'")->fetchAll();
+        }
+
+        if (check_password_hash(get_option('external_db_enc'), $password, $data[0][$upass]) || count($check) > 0) {    //create/update wp account from external database if login/pw exact match exists in that db
             $extfields = $query[0];
             $process = TRUE;
 
@@ -404,7 +429,7 @@ function external_db_auth_check_login($username, $password)
                 }
             }
             //only continue with user update/creation if login/pw is valid AND, if used, proper role perms
-            if ((get_option('external_db_enc') === 'HASH' || get_option('external_db_enc') === 'PHPass') && external_check_password($password, $data[0]['password'])) {
+            if ((get_option('external_db_enc') === 'HASH' || get_option('external_db_enc') === 'PHPass') && external_check_password($password, $data[0][$upass])) {
                 if ($process) {
                     $userarray['user_login'] = $username;
                     $userarray['user_pass'] = $password;
@@ -433,7 +458,7 @@ function external_db_auth_check_login($username, $password)
                 }
             }
 
-            if (get_option('external_db_enc') == 'MD5' || get_option('external_db_enc') == 'SHA1') {
+            if (get_option('external_db_enc') == 'MD5' || get_option('external_db_enc') == 'SHA1' || get_option('external_db_enc') == 'SHA256') {
                 if ($process) {
                     $userarray['user_login'] = $username;
                     $userarray['user_pass'] = $password;
