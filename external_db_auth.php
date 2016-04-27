@@ -42,7 +42,11 @@ function external_db_auth_activate()
     add_option('external_db_user', "", "External database username");
     add_option('external_db_pw', "", "External database password");
     add_option('external_db_table', "", "External database table for authentication");
+    add_option('external_db_table2', "", "Alternative external database table for authentication");
+    add_option('external_db_idfield1', "", "External database field for ID (primary/secondary key)");
+    add_option('external_db_idfield2', "", "External database field for ID (primary/secondary key)");
     add_option('external_db_namefield', "", "External database field for username");
+    add_option('external_db_namefield2', "", "External database field for username in alternative table");
     add_option('external_db_pwfield', "", "External database field for password");
     add_option('external_db_first_name', "");
     add_option('external_db_last_name', "");
@@ -70,7 +74,11 @@ function external_db_auth_init()
     register_setting('external_db_auth', 'external_db_user');
     register_setting('external_db_auth', 'external_db_pw');
     register_setting('external_db_auth', 'external_db_table');
+    register_setting('external_db_auth', 'external_db_table2');
+    register_setting('external_db_auth', 'external_db_idfield1');
+    register_setting('external_db_auth', 'external_db_idfield2');
     register_setting('external_db_auth', 'external_db_namefield');
+    register_setting('external_db_auth', 'external_db_namefield2');
     register_setting('external_db_auth', 'external_db_pwfield');
     register_setting('external_db_auth', 'external_db_first_name');
     register_setting('external_db_auth', 'external_db_last_name');
@@ -155,6 +163,10 @@ function external_db_auth_display_options()
                     <th scope="row"><label><?php _e('User table'); ?></label></th>
                     <td><input type="text" name="external_db_table" value="<?php echo get_option('external_db_table'); ?>" /></td>
                 </tr>
+                <tr valign="top">
+                    <th scope="row"><label><?php _e('User table (alternative)'); ?></label></th>
+                    <td><input type="text" name="external_db_table2" value="<?php echo get_option('external_db_table2'); ?>" /></td>
+                </tr>
             </table>
 
             <h3><?php _e('External Database Source Fields'); ?></h3>
@@ -197,6 +209,18 @@ function external_db_auth_display_options()
                         </select><br />
                         <input type="text" name="external_db_role_value" value="<?php echo get_option('external_db_role_value'); ?>" /> 
                         <span class="description"><?php _e('Use this if you have certain user role ids in your external database to further restrict allowed logins.  If unused, leave fields blank.'); ?></span></td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row"><label><?php _e('External database field for ID (primary/secondary key)'); ?></label></th>
+                    <td><input type="text" name="external_db_idfield1" value="<?php echo get_option('external_db_idfield1'); ?>" /></td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row"><label><?php _e('External database field for ID (primary/secondary key)'); ?></label></th>
+                    <td><input type="text" name="external_db_idfield2" value="<?php echo get_option('external_db_idfield2'); ?>" /></td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row"><label><?php _e('Username (alternative; if used in second table)'); ?></label></th>
+                    <td><input type="text" name="external_db_namefield2" value="<?php echo get_option('external_db_namefield2'); ?>" /></td>
                 </tr>
                 <tr valign="top">
                     <th scope="row"><label><?php _e('First name'); ?></label></th>
@@ -375,6 +399,7 @@ function external_db_auth_check_login($username, $password)
             if ($value == "")
                 unset($sqlfields[$key]);
         }
+        //this seems to collect the fields/columns for data retrieval
         $sqlfields2 = implode(", ", $sqlfields);
 
         //just so queries won't error out if there are no relevant fields for extended data.
@@ -386,7 +411,11 @@ function external_db_auth_check_login($username, $password)
             $query = $database->query("SELECT $sqlfields2 FROM " . get_option('external_db_table') . " WHERE " . get_option('external_db_namefield') . " = '$username' AND " . get_option('external_db_pwfield') . " = '$password2'")->fetchAll();
             $check = $database->query("SELECT $sqlfields2 FROM " . get_option('external_db_table') . " WHERE " . get_option('external_db_namefield') . " = '$username' AND " . get_option('external_db_pwfield') . " = '$password2'")->fetchAll();
         } else {
-            $query = $database->query("SELECT $sqlfields2 FROM " . get_option('external_db_table') . " WHERE " . get_option('external_db_namefield') . " = '$username'")->fetchAll();
+            // Drawing in data from two tables
+            $query = $database->query("SELECT $sqlfields2 FROM " . get_option('external_db_table') . " A INNER JOIN " . get_option('external_db_table2') . " B ON " . get_option('external_db_idfield1') . " = " . get_option('external_db_idfield2') . " WHERE " . get_option('external_db_namefield') . " = '$username' ")->fetchAll();
+
+        //needed:
+            // $query = $database->query("SELECT $sqlfields2 FROM USER A INNER JOIN PERSON B ON A.PERSON_TID = B.TID WHERE " . get_option('external_db_namefield') . " = '$username' ")->fetchAll();
         }
 
         if (check_password_hash(get_option('external_db_enc'), $password, $data[0][$upass]) || count($check) > 0) {    //create/update wp account from external database if login/pw exact match exists in that db
@@ -470,7 +499,9 @@ function external_db_auth_check_login($username, $password)
                     $userarray['aim'] = $extfields[$sqlfields['aim']];
                     $userarray['yim'] = $extfields[$sqlfields['yim']];
                     $userarray['jabber'] = $extfields[$sqlfields['jabber']];
-                    $userarray['display_name'] = $extfields[$sqlfields['first_name']] . " " . $extfields[$sqlfields['last_name']];
+                    //$userarray['display_name'] = $extfields[$sqlfields['first_name']] . " " . $extfields[$sqlfields['last_name']];
+                    // Let's use usernames by default
+                    $userarray['display_name'] = $username;
 
                     //also if no extended data fields
                     if ($userarray['display_name'] == " ")
